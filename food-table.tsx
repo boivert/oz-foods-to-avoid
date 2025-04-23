@@ -74,7 +74,7 @@ export default function FoodTable({ data = sampleData }: FoodTableProps) {
   const showCollisionAlert = exactMatchFood !== null
 
   return (
-    <div className="w-full max-w-4xl mx-auto bg-[#0f0f0f] text-[#e5e5e5] p-6 rounded-lg">
+    <div className="w-full max-w-4xl mx-auto bg-[#070707] text-[#e5e5e5] p-6 rounded-lg">
       {/* Search Bar */}
       <div className="flex justify-center mb-6">
         <div className="relative w-full max-w-md">
@@ -84,7 +84,7 @@ export default function FoodTable({ data = sampleData }: FoodTableProps) {
             placeholder="Search foods..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-[#1a1a1a] border-[#333] text-[#e5e5e5] placeholder:text-gray-500 focus-visible:ring-[#333] focus-visible:ring-offset-[#0f0f0f]"
+            className="pl-10 bg-[#1a1a1a] border-[#333] text-[#e5e5e5] placeholder:text-gray-500 focus-visible:ring-[#333] focus-visible:ring-offset-[#070707]"
           />
         </div>
       </div>
