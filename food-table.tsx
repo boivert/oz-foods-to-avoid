@@ -49,6 +49,7 @@ export default function FoodTable({ data = sampleData }: FoodTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [filteredData, setFilteredData] = useState<FoodItem[]>(data)
   const rowsPerPage = 10
+  const rowHeight = 50 // Define a fixed row height as a number for consistent calculations
 
   // Filter data based on search term
   useEffect(() => {
@@ -62,27 +63,15 @@ export default function FoodTable({ data = sampleData }: FoodTableProps) {
   const startIndex = (currentPage - 1) * rowsPerPage
   const paginatedData = filteredData.slice(startIndex, startIndex + rowsPerPage)
 
-  // Generate page numbers for pagination
-  const getPageNumbers = () => {
-    const pages = []
-    const maxVisiblePages = 3
+  // Calculate how many placeholder rows we need
+  const placeholderCount = Math.max(0, rowsPerPage - paginatedData.length)
 
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i)
-      }
-    } else {
-      if (currentPage <= 2) {
-        pages.push(1, 2, 3)
-      } else if (currentPage >= totalPages - 1) {
-        pages.push(totalPages - 2, totalPages - 1, totalPages)
-      } else {
-        pages.push(currentPage - 1, currentPage, currentPage + 1)
-      }
-    }
-
-    return pages
-  }
+  // Check if we have an exact match for a food name and get that food
+  const exactMatchFood = searchTerm.trim() !== "" ? 
+    data.find(item => item.food.toLowerCase() === searchTerm.toLowerCase()) : null
+  
+  // Show collision alert for exact matches
+  const showCollisionAlert = exactMatchFood !== null
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-[#0f0f0f] text-[#e5e5e5] p-6 rounded-lg">
@@ -100,50 +89,98 @@ export default function FoodTable({ data = sampleData }: FoodTableProps) {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border border-[#333] overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-[#1a1a1a]">
-              <TableRow className="hover:bg-[#252525] border-b border-[#333]">
-                <TableHead className="text-[#e5e5e5] font-medium">Food</TableHead>
-                <TableHead className="text-[#e5e5e5] font-medium text-right">Mentions</TableHead>
-                <TableHead className="text-[#e5e5e5] font-medium text-right">Upvotes</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedData.length > 0 ? (
-                paginatedData.map((item, index) => (
-                  <TableRow key={index} className="hover:bg-[#252525] border-b border-[#333] transition-colors">
-                    <TableCell className="font-medium">{item.food}</TableCell>
-                    <TableCell className="text-right">{item.mentions}</TableCell>
-                    <TableCell className="text-right">{item.upvotes}</TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
-                    No matching foods found. Try another search.
-                  </TableCell>
+      {/* Fixed height container to ensure consistent table height */}
+      <div className="relative">
+        {/* Table with fixed height */}
+        <div className="rounded-md border border-[#333] overflow-hidden" style={{ height: `${rowHeight * (rowsPerPage + 1)}px` }}>
+          <div className="overflow-x-auto h-full">
+            <Table>
+              <TableHeader className="bg-[#1a1a1a]">
+                <TableRow style={{ height: `${rowHeight}px` }}>
+                  <TableHead className="text-[#e5e5e5] font-medium py-0">Food</TableHead>
+                  <TableHead className="text-[#e5e5e5] font-medium text-right py-0">Mentions</TableHead>
+                  <TableHead className="text-[#e5e5e5] font-medium text-right py-0">Upvotes</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {paginatedData.length > 0 ? (
+                  <>
+                    {/* Actual data rows */}
+                    {paginatedData.map((item, index) => (
+                      <TableRow 
+                        key={index} 
+                        className="hover:bg-[#252525] transition-colors border-b border-[#333]"
+                        style={{ height: `${rowHeight}px` }}
+                      >
+                        <TableCell className="font-medium py-0">{item.food}</TableCell>
+                        <TableCell className="text-right py-0">{item.mentions}</TableCell>
+                        <TableCell className="text-right py-0">{item.upvotes}</TableCell>
+                      </TableRow>
+                    ))}
+                    
+                    {/* Placeholder rows to maintain fixed height */}
+                    {placeholderCount > 0 && Array(placeholderCount).fill(0).map((_, index) => (
+                      <TableRow 
+                        key={`placeholder-${index}`} 
+                        className={`border-b border-[#333] border-dashed ${index === 0 && showCollisionAlert ? "opacity-100" : "opacity-30"}`}
+                        style={{ height: `${rowHeight}px` }}
+                      >
+                        {index === 0 && showCollisionAlert && exactMatchFood ? (
+                          <TableCell colSpan={3} className="text-center py-0">
+                            <div className="flex items-center justify-center space-x-2 text-gray-400 animate-pulse font-satoshi">
+                              <span>🚨</span>
+                              <span>Collision Alert: {exactMatchFood.food} inbound. Initiate avoidance manoeuvre...</span>
+                            </div>
+                          </TableCell>
+                        ) : (
+                          <>
+                            <TableCell className="py-0"></TableCell>
+                            <TableCell className="text-right py-0"></TableCell>
+                            <TableCell className="text-right py-0"></TableCell>
+                          </>
+                        )}
+                      </TableRow>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <TableRow style={{ height: `${rowHeight}px` }}>
+                      <TableCell colSpan={3} className="text-center py-0">
+                        No matching foods found. Try another search.
+                      </TableCell>
+                    </TableRow>
+                    {/* Add placeholder rows even for empty results */}
+                    {Array(rowsPerPage - 1).fill(0).map((_, index) => (
+                      <TableRow 
+                        key={`empty-placeholder-${index}`} 
+                        className="border-b border-[#333] border-dashed opacity-30"
+                        style={{ height: `${rowHeight}px` }}
+                      >
+                        <TableCell className="py-0"></TableCell>
+                        <TableCell className="text-right py-0"></TableCell>
+                        <TableCell className="text-right py-0"></TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
 
-      {/* Pagination */}
-      <div className="mt-4 flex items-center justify-end text-sm">
+      {/* Pagination - fixed height to ensure consistency */}
+      <div className="mt-8 flex items-center justify-end text-sm h-8">
         <div className="flex items-center space-x-2">
-          <span className="text-gray-400">
-            Viewing {startIndex + 1}-{Math.min(startIndex + rowsPerPage, filteredData.length)} of {filteredData.length}
+          <span className="text-gray-400 inline-block min-w-[150px] text-right">
+            Viewing {filteredData.length > 0 ? `${startIndex + 1}-${Math.min(startIndex + rowsPerPage, filteredData.length)} of ${filteredData.length}` : '0-0 of 0'}
           </span>
           <div className="flex items-center">
             <button
               onClick={() => {
                 if (currentPage > 1) setCurrentPage(currentPage - 1)
               }}
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || filteredData.length <= rowsPerPage}
               className="h-8 w-8 flex items-center justify-center rounded bg-[#1a1a1a] text-[#e5e5e5] disabled:opacity-50"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -161,7 +198,7 @@ export default function FoodTable({ data = sampleData }: FoodTableProps) {
               onClick={() => {
                 if (currentPage < totalPages) setCurrentPage(currentPage + 1)
               }}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalPages || filteredData.length <= rowsPerPage}
               className="h-8 w-8 flex items-center justify-center rounded bg-[#1a1a1a] text-[#e5e5e5] disabled:opacity-50"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
